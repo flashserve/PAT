@@ -12,7 +12,6 @@ Below are the instructions to reproduce the experimental results presented in ou
 - `plot/`: Contains scripts for generating plots from experimental results.
 - `plugin/`: Contains vLLM plugins to integrate PAT with vLLM.
 - `prefix_attn/`: Contains the main Python package for PAT.
-- `test/`: Contains unit tests for PAT.
 
 ## Required Hardware and Software
 
