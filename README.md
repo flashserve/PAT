@@ -6,7 +6,7 @@ PAT automatically identifies complex shared prefix patterns within batched seque
 
 # Artifact Evaluation Instructions
 
-Below are the instructions to reproduce the experimental results presented in our paper "PAT: Accelerating LLM Decoding via Prefix-Aware Attention with Resource Efficient Multi-Tile Kernel". The repository is organized as follows:
+Below are the instructions to reproduce the experimental results presented in our paper "**PAT: Accelerating LLM Decoding via Prefix-Aware Attention with Resource Efficient Multi-Tile Kernel**". The repository is organized as follows:
 - `benchmark/`: Contains scripts for kernel performance experiments and end-to-end serving performance experiments.
 - `csrc/`: Contains the core implementation of the PAT.
 - `plot/`: Contains scripts for generating plots from experimental results.
@@ -44,7 +44,7 @@ docker pull flashserve/pat:ae  # (~50 GB, including model weights)
 
 ### Step 3: Start the Docker Container
 ```shell
-docker run -it --gpus all -v PAT:/workspace/PAT -w /workspace \
+docker run -it --gpus all -v ${PWD}/PAT:/workspace/PAT -w /workspace \
     --shm-size=64g flashserve/pat:ae /bin/bash
 ```
 
