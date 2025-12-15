@@ -1,0 +1,27 @@
+# Ignore IDE-related configurations
+.idea/
+*.iml
+
+# Ignore CMake build directories & compilation outputs
+build/
+cmake-build-*/
+*.egg-info/
+*.o
+*.so
+
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ignore virtual environments (if used)
+venv/
+.env/
+.venv/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Optional: ignore logs and temporary files
+*.log
+*.tmp
