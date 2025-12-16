@@ -9,10 +9,10 @@ This repository provides **PAT** (Prefix-Aware Attention), a high-performance CU
 
 **Features**: PAT identifies complex shared prefix patterns within batched sequences and schedules shared prefixes into separate CTA computations. This approach significantly reduces KV cache reads, which is the primary bottleneck in attention computation during LLM decoding.
 
-**Usage**: PAT serves as a plugin for LLM serving systems. To enble PAT in vLLM, only an environment variable `VLLM_ATTENTION_BACKEND="PREFIX_ATTN"` is required. Please refer to the "Build PAT from Source" section below for detailed instructions.
+**Usage**: PAT serves as a plugin for LLM serving systems. To enble PAT in vLLM, only an environment variable `VLLM_ATTENTION_BACKEND="PREFIX_ATTN"` is required. Please refer to [Install PAT from Source](#alternative-install-pat-from-source) for detailed instructions on installing PAT for NVIDIA A100 and H100 GPUs.
 
 
-# Artifact Evaluation Instructions
+# 🔖 Artifact Evaluation Instructions
 
 Below are the instructions to reproduce the experimental results presented in our paper "**PAT: Accelerating LLM Decoding via Prefix-Aware Attention with Resource Efficient Multi-Tile Kernel**". The repository is organized as follows:
 - `benchmark/`: Contains scripts for kernel performance experiments and end-to-end serving performance experiments.
@@ -20,6 +20,7 @@ Below are the instructions to reproduce the experimental results presented in ou
 - `plot/`: Contains scripts for generating plots from experimental results.
 - `plugin/`: Contains vLLM plugins to integrate PAT with vLLM.
 - `prefix_attn/`: Contains the main Python package for PAT.
+- `test/`: Contains unit tests for PAT.
 
 ## Required Hardware and Software
 
@@ -32,8 +33,6 @@ To run these experiments, you will need:
 We have tested the experiments on Google Cloud `a2-ultragpu-1g` instance (200GB disk) with the `Deep Learning VM with CUDA 12.4 M129` system image. We recommend using a similar setup to ensure convenience and consistent performance.
 
 > Hint: You can use multiple GPUs (e.g., `a2-ultragpu-8g` instance) to speed up the end-to-end performance experiments. The scripts will automatically detect the available GPUs and distribute the experiments across them.
-
-> Hint: For alternative hardware such as H100, you need to [install PAT from source](https://github.com/flashserve/PAT?tab=readme-ov-file#alternative-install-pat-from-source). We have tested PAT on both A100 and H100. Please refer to our paper for details.
 
 ## Installation
 
@@ -57,6 +56,14 @@ docker pull flashserve/pat:ae  # (~50 GB, including model weights)
 docker run -it --gpus all -v ${PWD}/PAT:/workspace/PAT -w /workspace \
     --shm-size=64g flashserve/pat:ae /bin/bash
 ```
+
+### Step 4: Test the Installation
+```shell
+cd /workspace/PAT/test
+python test.py
+```
+
+If the tests pass successfully, you should see the output: `[INFO] successfully pass the test!`
 
 ## Run Experiments
 
@@ -113,9 +120,9 @@ This will generate a plot `fig/eval_e2e_overall_p99.pdf`, showing the end-to-end
 
 
 
-## Alternative: Install PAT from Source
+## 🛠️ Alternative: Install PAT from Source
 
-You can also set up the environment from source without using Docker. Note that this method may take about 1-3 hours to complete, depending on hardware and network conditions.
+Alternatively, PAT can be installed directly from source without using Docker. This setup supports both NVIDIA A100 and H100 GPUs, and we have validated PAT on both. Depending on hardware and network conditions, the full installation typically takes about 1–3 hours.
 
 1. Requirements: A100 / H100 GPU, CUDA>=12.4
 
@@ -155,7 +162,7 @@ VLLM_ATTENTION_BACKEND="PREFIX_ATTN" VLLM_USE_V1=0 \
 vllm serve Qwen/Qwen3-8B --enable-prefix-caching --enforce-eager
 ```
 
-# Citation
+# 📚 Citation
 
 If you use this codebase, or otherwise found our work valuable, please cite:
 ```
