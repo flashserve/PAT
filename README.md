@@ -57,7 +57,7 @@ docker run -it --gpus all -v ${PWD}/PAT:/workspace/PAT -w /workspace \
     --shm-size=64g flashserve/pat:ae /bin/bash
 ```
 
-### Step 4: Test the Installation
+### Step 4: Basic Test
 ```shell
 cd /workspace/PAT/test
 python test.py
@@ -81,13 +81,13 @@ The results will be saved in `kernel_perf.json`.
 
 ### Step 2: End-to-End Performance Experiments
 
-This script evaluates end-to-end inference latency across different methods under real-world workloads, corresponding to **Section 8.4** and **Figure 11** in the paper. Note that completing all experiments requires over 60 GPU-hours, so we provide two scripts: (1) `run_e2e_bench_part.sh`: runs a subset of experiments (QPS=7, all workloads, all baselines) for quick verification of results; (2) `run_e2e_bench_full.sh`: runs all experiments to reproduce the results in the paper.
+This script evaluates end-to-end inference latency across different methods under real-world workloads, corresponding to **Section 8.4** and **Figure 11** in the paper. Note that completing all experiments requires over 60 GPU-hours, so we provide two scripts: (1) `run_e2e_bench_part.sh`: runs a subset of experiments (QPS=7&9, all workloads, all baselines) for quick verification of results; (2) `run_e2e_bench_full.sh`: runs all experiments to reproduce the results in the paper.
 
-> Hint: To run the full experiments (`run_e2e_bench_full.sh`), you can use multiple GPUs (e.g., `a2-ultragpu-8g` instance) to speed up the experiments. The scripts will automatically detect the available GPUs and distribute the experiments across them.
+> Hint: You can use multiple GPUs (e.g., an `a2-ultragpu-8g` instance) to speed up both the partial and full experiments. The scripts will automatically detect the available GPUs and distribute the experiments across them.
 
 ```shell
 cd /workspace/PAT/benchmark
-# Quick verification (takes 4-5 GPU-hours to complete)
+# Quick verification (takes 8-10 GPU-hours to complete)
 bash ./run_e2e_bench_part.sh
 # Full experiments (takes over 60 GPU-hours to complete)
 # bash ./run_e2e_bench_full.sh
@@ -114,7 +114,9 @@ cd /workspace/PAT/plot
 python eval_e2e_from_jsonl.py --log-file ../benchmark/e2e_perf.jsonl
 ```
 
-This will generate a plot `fig/eval_e2e_overall_p99.pdf`, showing the end-to-end serving performance comparison among different methods, corresponding to **Figure 11** in the paper as follows.
+This will generate a plot `fig/eval_e2e_overall_p99.pdf`, which visualizes the end-to-end serving performance at **QPS=7&9** for the four workloads (2 models × 2 traces) included in the partial evaluation. The plot contains a limited number of data points and is intended for quick verification of the relative performance between PAT and the baselines. To reproduce the full results shown in **Figure 11** of the paper, please run `run_e2e_bench_full.sh` in [# Step 2: End-to-End Performance Experiments](#step-2-end-to-end-performance-experiments).
+
+
 
 ![kernel performance](plot/fig/sample_e2e.png)
 

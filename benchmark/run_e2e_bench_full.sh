@@ -1,10 +1,13 @@
 #!/bin/bash
 
 NUM_PROMPTS=5000
-MODELS=("meta-llama/Meta-Llama-3-8B" "Qwen/Qwen3-8B")
-BACKENDS=("FLASH_ATTN" "FLASHINFER" "PREFIX_ATTN" "Relay_ATTN")
-TRACES=("toolagent" "burst")
+ALL_REQ_RATES=($(seq 4 0.5 11))
 
+MODELS=("meta-llama/Meta-Llama-3-8B" "Qwen/Qwen3-8B")
+TRACES=("toolagent" "burst")
+BACKENDS=("FLASH_ATTN" "FLASHINFER" "PREFIX_ATTN" "Relay_ATTN")
+
+NUM_GPUS=$(nvidia-smi -L | wc -l)
 PROGRESS_LOG="records.log"
 LOCK_FILE="/tmp/exp_progress.lock"
 
@@ -97,21 +100,19 @@ run_worker() {
     done
 }
 
-NUM_GPUS=$(nvidia-smi -L | wc -l)
+
 if [ -z "$NUM_GPUS" ] || [ "$NUM_GPUS" -eq 0 ]; then
     NUM_GPUS=1
 fi
 
-ALL_RATES=($(seq 4 0.5 11))
-
 echo "Detected GPUs: $NUM_GPUS"
-echo "Total Rates: ${#ALL_RATES[@]}"
+echo "Total Rates: ${#ALL_REQ_RATES[@]}"
 
 for ((gpu_id=0; gpu_id<NUM_GPUS; gpu_id++)); do
     GPU_RATES=()
 
-    for ((i=gpu_id; i<${#ALL_RATES[@]}; i+=NUM_GPUS)); do
-        GPU_RATES+=("${ALL_RATES[i]}")
+    for ((i=gpu_id; i<${#ALL_REQ_RATES[@]}; i+=NUM_GPUS)); do
+        GPU_RATES+=("${ALL_REQ_RATES[i]}")
     done
 
     RATES_STR="${GPU_RATES[*]}"

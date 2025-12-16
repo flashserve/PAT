@@ -193,6 +193,7 @@ def plot_grid(data, out_path="figure.pdf", log_scale=True):
         for sp in ax.spines.values():
             sp.set_alpha(0.4)
         ax.tick_params(axis="both", length=0)
+        ax.set_xlim(3.5, 11.5)
 
     style_lookup = {}
     for raw, (disp, mk, c_idx) in BACKEND_STYLE_MAP.items():
@@ -280,7 +281,7 @@ def plot_grid(data, out_path="figure.pdf", log_scale=True):
     )
 
     fig.subplots_adjust(
-        left=0.05, right=0.995, bottom=0.1, top=0.88, wspace=0.15, hspace=0.075
+        left=0.075, right=0.995, bottom=0.1, top=0.88, wspace=0.15, hspace=0.075
     )
 
     fig.savefig(out_path)
