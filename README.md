@@ -1,4 +1,4 @@
-# PAT: Prefix Aware Attention
+# PAT: Prefix-Aware Attention for LLM Decoding
 
 This repository provides **PAT** (Prefix-Aware Attention), a high-performance CUTLASS-based implementation designed to optimize the decoding attention phase in transformer models.
 
@@ -31,7 +31,9 @@ To run these experiments, you will need:
 
 We have tested the experiments on Google Cloud `a2-ultragpu-1g` instance (200GB disk) with the `Deep Learning VM with CUDA 12.4 M129` system image. We recommend using a similar setup to ensure convenience and consistent performance.
 
-Hint: You can use multiple GPUs (e.g., `a2-ultragpu-8g` instance) to speed up the end-to-end performance experiments. The scripts will automatically detect the available GPUs and distribute the experiments across them.
+> Hint: You can use multiple GPUs (e.g., `a2-ultragpu-8g` instance) to speed up the end-to-end performance experiments. The scripts will automatically detect the available GPUs and distribute the experiments across them.
+
+> Hint: For alternative hardware such as H100, you need to [install PAT from source](https://github.com/flashserve/PAT?tab=readme-ov-file#alternative-install-pat-from-source). We have tested PAT on both A100 and H100. Please refer to our paper for details.
 
 ## Installation
 
@@ -74,7 +76,7 @@ The results will be saved in `kernel_perf.json`.
 
 This script evaluates end-to-end inference latency across different methods under real-world workloads, corresponding to **Section 8.4** and **Figure 11** in the paper. Note that completing all experiments requires over 60 GPU-hours, so we provide two scripts: (1) `run_e2e_bench_part.sh`: runs a subset of experiments (QPS=7, all workloads, all baselines) for quick verification of results; (2) `run_e2e_bench_full.sh`: runs all experiments to reproduce the results in the paper.
 
-Hint: To run the full experiments (`run_e2e_bench_full.sh`), you can use multiple GPUs (e.g., `a2-ultragpu-8g` instance) to speed up the experiments. The scripts will automatically detect the available GPUs and distribute the experiments across them.
+> Hint: To run the full experiments (`run_e2e_bench_full.sh`), you can use multiple GPUs (e.g., `a2-ultragpu-8g` instance) to speed up the experiments. The scripts will automatically detect the available GPUs and distribute the experiments across them.
 
 ```shell
 cd /workspace/PAT/benchmark
