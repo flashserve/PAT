@@ -13,7 +13,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent  # .../prefix-attn/benchmark
 SERVE_SCRIPT = BASE_DIR / "sh" / "serve_llm_single_gpu.sh"
 BENCHMARK_SCRIPT = BASE_DIR / "benchmark_serving.py"
-DEFAULT_OUTPUT_LOG = BASE_DIR / "e2e_results.log"
+DEFAULT_OUTPUT_LOG = BASE_DIR / "e2e_perf.jsonl"
 
 
 def wait_for_server_ready(url, timeout=300):

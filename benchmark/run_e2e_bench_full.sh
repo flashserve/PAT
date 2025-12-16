@@ -5,7 +5,7 @@ MODELS=("meta-llama/Meta-Llama-3-8B" "Qwen/Qwen3-8B")
 BACKENDS=("FLASH_ATTN" "FLASHINFER" "PREFIX_ATTN" "Relay_ATTN")
 TRACES=("toolagent" "burst")
 
-PROGRESS_LOG="e2e_perf.jsonl"
+PROGRESS_LOG="records.log"
 LOCK_FILE="/tmp/exp_progress.lock"
 
 if [ ! -f "$PROGRESS_LOG" ]; then
