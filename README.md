@@ -2,7 +2,15 @@
 
 This repository provides **PAT** (Prefix-Aware Attention), a high-performance CUTLASS-based implementation designed to optimize the decoding attention phase in transformer models.
 
-PAT automatically identifies complex shared prefix patterns within batched sequences and adaptively schedules shared prefixes into separate CTA computations. This approach significantly reduces KV cache reads, which is the primary bottleneck in attention computation during decoding.
+> [**PAT: Accelerating LLM Decoding via Prefix-Aware Attention with Resource Efficient Multi-Tile Kernel**](https://arxiv.org/abs/2511.22333)  
+> Jinjun Yi†, Zhixin Zhao†, Yitao Hu*, Ke Yan, Weiwei Sun, Hao Wang, Laiping Zhao, Yuhao Zhang, Wenxin Li, Keqiu Li. \
+> *ACM International Conference on Architectural Support for Programming Languages and Operating Systems (**ASPLOS**), 2026*
+
+
+**Features**: PAT identifies complex shared prefix patterns within batched sequences and schedules shared prefixes into separate CTA computations. This approach significantly reduces KV cache reads, which is the primary bottleneck in attention computation during LLM decoding.
+
+**Usage**: PAT serves as a plugin for LLM serving systems. To enble PAT in vLLM, only an environment variable `VLLM_ATTENTION_BACKEND="PREFIX_ATTN"` is required. Please refer to the "Build PAT from Source" section below for detailed instructions.
+
 
 # Artifact Evaluation Instructions
 
@@ -86,7 +94,9 @@ cd /workspace/PAT/plot
 python eval_kernel_perf.py --log-file ../benchmark/kernel_perf.json
 ```
 
-This will generate a plot `fig/kernel_performance_overall.pdf`, showing the kernel performance comparison among different methods, corresponding to **Figure 10** in the paper.
+This will generate a plot `fig/kernel_performance_overall.pdf`, showing the kernel performance comparison among different methods, corresponding to **Figure 10** in the paper as follows.
+
+![kernel performance](plot/fig/sample_kernel.png)
 
 ### Step 2: Parsing End-to-End Serving Results
 
@@ -95,7 +105,9 @@ cd /workspace/PAT/plot
 python eval_e2e_from_jsonl.py --log-file ../benchmark/e2e_perf.jsonl
 ```
 
-This will generate a plot `fig/eval_e2e_overall_p99.pdf`, showing the end-to-end serving performance comparison among different methods, corresponding to **Figure 11** in the paper.
+This will generate a plot `fig/eval_e2e_overall_p99.pdf`, showing the end-to-end serving performance comparison among different methods, corresponding to **Figure 11** in the paper as follows.
+
+![kernel performance](plot/fig/sample_e2e.png)
 
 
 
@@ -127,7 +139,7 @@ TORCH_CUDA_ARCH_LIST="8.0" pip install .
 pip install flashinfer-python==0.2.5 transformers==4.53.0 numpy==1.24.0
 ```
 
-4. Build PAT from source (~10 minutes)
+5. Build PAT from source (~10 minutes)
 ```shell
 # PyTorch (2.7.0) is required if vLLM is not installed
 cd ~/workspace/PAT
@@ -135,4 +147,21 @@ cd ~/workspace/PAT
 CUTLASS_ROOT=<abs_path_to_cutlass> pip install . --no-build-isolation
 ```
 
+6. Launch vLLM with PAT
+```shell
+VLLM_ATTENTION_BACKEND="PREFIX_ATTN" VLLM_USE_V1=0 \
+vllm serve Qwen/Qwen3-8B --enable-prefix-caching --enforce-eager
+```
+
+# Citation
+
+If you use this codebase, or otherwise found our work valuable, please cite:
+```
+@inproceedings{yi2026pat,
+  title={PAT: Accelerating LLM Decoding via Prefix-Aware Attention with Resource Efficient Multi-Tile Kernel},
+  author={Yi, Jinjun and Zhao, Zhixin and Hu, Yitao and Yan, Ke and Sun, Weiwei and Wang, Hao and Zhao, Laiping and Zhang, Yuhao and Li, Wenxin and Li, Keqiu},
+  booktitle={Proceedings of the 31st ACM International Conference on Architectural Support for Programming Languages and Operating Systems},
+  year={2026}
+}
+```
 
