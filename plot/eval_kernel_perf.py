@@ -4,6 +4,194 @@ import numpy as np
 import argparse
 import json
 import os
+import json
+from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
+
+
+def _safe_stats(xs: List[float]) -> Tuple[float, float, float]:
+    """Return (mean, min, max). xs must be non-empty."""
+    mean_v = sum(xs) / len(xs)
+    return mean_v, min(xs), max(xs)
+
+
+def _format_pct(x: float, digits: int = 2) -> str:
+    return f"{x:.{digits}f}%"
+
+
+def _format_x(x: float, digits: int = 3) -> str:
+    return f"{x:.{digits}f}x"
+
+
+def summarize_kernel_perf(
+    log_file: str,
+    pat_key: str = "pat",
+    baseline_keys: Optional[List[str]] = None,
+    tree_filter: Optional[str] = None,
+    digits_pct: int = 2,
+    digits_ratio: int = 3,
+) -> Dict[str, Dict[str, float]]:
+    """
+    Summarize kernel latency stats.
+
+    Outputs:
+      (1) For each baseline: PAT vs baseline reduction in kernel latency (%): mean/min/max over all (tree, head) configs.
+      (2) Over all baselines and all (tree, head) configs: (baseline latency / PAT latency) ratio: mean/min/max.
+      (3) If tree_filter is provided: same as (1) but only within the specified tree.
+
+    Definition:
+      reduction(%) = (baseline - pat) / baseline * 100
+      ratio(x)     = baseline / pat
+
+    Returns:
+      A dict with raw numeric stats (useful if you want to print elsewhere).
+    """
+    with open(log_file, "r", encoding="utf-8") as f:
+        raw_data = json.load(f)
+
+    # Discover baselines if not specified.
+    if baseline_keys is None:
+        keys = set()
+        for e in raw_data:
+            lat = e.get("latencies", {}) or {}
+            keys.update(lat.keys())
+        keys.discard(pat_key)
+        baseline_keys = sorted(keys)
+
+    # Collect lists
+    red_all: Dict[str, List[float]] = defaultdict(list)    # baseline -> [reduction%...]
+    red_tree: Dict[str, List[float]] = defaultdict(list)   # baseline -> [reduction%...] within tree_filter
+    ratios_all: Dict[str, List[float]] = defaultdict(list)  # baseline -> [baseline/pat...]
+    
+    skipped = 0
+    used = 0
+
+    for e in raw_data:
+        tree = e.get("tree", None)
+        lat = e.get("latencies", {}) or {}
+        if pat_key not in lat:
+            skipped += 1
+            continue
+        pat_lat = lat.get(pat_key, None)
+        if pat_lat is None or pat_lat <= 0:
+            skipped += 1
+            continue
+
+        used += 1
+        tree = e.get("tree", None)
+
+        for b in baseline_keys:
+            b_lat = lat.get(b, None)
+            if b_lat is None or b_lat <= 0:
+                continue
+
+            # (1) reduction (%)
+            if tree not in ['256_1024', '256_4096']:
+            # if True:
+                reduction = (b_lat - pat_lat) / b_lat * 100.0
+                red_all[b].append(reduction)
+
+            # (2) ratio baseline / pat
+            ratios_all[b].append(b_lat / pat_lat)
+
+            # (3) tree-filtered reduction (%)
+            if tree_filter is not None and tree == tree_filter:
+                red_tree[b].append(reduction)
+
+    # ---- Print formatted outputs ----
+    header = f"Kernel Perf Summary (log_file={log_file})"
+    if tree_filter is not None:
+        header += f", tree_filter={tree_filter}"
+    print("=" * len(header))
+    print(header)
+    print("=" * len(header))
+    print(f"- PAT key: {pat_key}")
+    print(f"- Baselines: {baseline_keys}")
+    print(f"- Entries used (with valid PAT latency): {used}, skipped: {skipped}\n")
+
+    # (1) PAT vs each baseline reduction stats
+    print("[1] PAT vs Baseline: kernel latency reduction (%) over trees [1-18] & all head configs")
+    print(f"{'Baseline':<12}  {'Mean':>10}  {'Min':>10}  {'Max':>10}  {'N':>6}")
+    print("-" * 56)
+    stats_out: Dict[str, Dict[str, float]] = {"reduction_all": {}, "ratio_all": {}}
+
+    for b in baseline_keys:
+        xs = red_all.get(b, [])
+        if not xs:
+            print(f"{b:<12}  {'NA':>10}  {'NA':>10}  {'NA':>10}  {0:>6}")
+            continue
+        mean_v, min_v, max_v = _safe_stats(xs)
+        print(
+            f"{b:<12}  {_format_pct(mean_v, digits_pct):>10}  "
+            f"{_format_pct(min_v, digits_pct):>10}  {_format_pct(max_v, digits_pct):>10}  {len(xs):>6}"
+        )
+        stats_out["reduction_all"][b] = {"mean": mean_v, "min": min_v, "max": max_v, "n": len(xs)}
+
+    print("")
+
+    # (2) baseline / PAT ratios per baseline over all configs
+    print("[2] Baseline/PAT ratio (x) over ALL trees & head configs (per baseline)")
+    print(f"{'Baseline':<12}  {'Mean':>10}  {'Min':>10}  {'Max':>10}  {'N':>6}")
+    print("-" * 56)
+
+    stats_out["ratio_all"] = {}
+
+    for b in baseline_keys:
+        xs = ratios_all.get(b, [])
+        if not xs:
+            print(f"{b:<12}  {'NA':>10}  {'NA':>10}  {'NA':>10}  {0:>6}")
+            continue
+
+        mean_r, min_r, max_r = _safe_stats(xs)
+        print(
+            f"{b:<12}  {_format_x(mean_r, digits_ratio):>10}  "
+            f"{_format_x(min_r, digits_ratio):>10}  {_format_x(max_r, digits_ratio):>10}  {len(xs):>6}"
+        )
+        stats_out["ratio_all"][b] = {"mean": mean_r, "min": min_r, "max": max_r, "n": len(xs)}
+
+    print("")
+
+    # (3) tree-filtered stats (optional)
+    if tree_filter is not None:
+        print(f"[3] PAT vs Baseline: kernel latency reduction (%) within tree='{tree_filter}'")
+        print(f"{'Baseline':<12}  {'Mean':>10}  {'Min':>10}  {'Max':>10}  {'N':>6}")
+        print("-" * 56)
+        stats_out["reduction_tree"] = {}
+        for b in baseline_keys:
+            xs = red_tree.get(b, [])
+            if not xs:
+                print(f"{b:<12}  {'NA':>10}  {'NA':>10}  {'NA':>10}  {0:>6}")
+                continue
+            mean_v, min_v, max_v = _safe_stats(xs)
+            print(
+                f"{b:<12}  {_format_pct(mean_v, digits_pct):>10}  "
+                f"{_format_pct(min_v, digits_pct):>10}  {_format_pct(max_v, digits_pct):>10}  {len(xs):>6}"
+            )
+            stats_out["reduction_tree"][b] = {"mean": mean_v, "min": min_v, "max": max_v, "n": len(xs)}
+
+        print("")
+
+    return stats_out
+
+
+def summarize_kernel_perf_for_tree(
+    log_file: str,
+    tree: str,
+    pat_key: str = "pat",
+    baseline_keys: Optional[List[str]] = None,
+    digits_pct: int = 2,
+):
+    """
+    Convenience wrapper for requirement (3):
+      Under a specified tree config, summarize PAT reduction vs each baseline across all head configs.
+    """
+    return summarize_kernel_perf(
+        log_file=log_file,
+        pat_key=pat_key,
+        baseline_keys=baseline_keys,
+        tree_filter=tree,
+        digits_pct=digits_pct,
+    )
 
 
 def create_performance_plot(
@@ -73,15 +261,13 @@ def create_performance_plot(
         for i, tree in enumerate(all_unique_trees):
             print(f"  Index {i}: {tree}")
         print("-" * 40)
-        print(
-            "Use the [index numbers] above in selected_indices to choose data to plot."
-        )
+        print("Use the [index numbers] above in indices to choose data to plot.")
         return
 
     # --- Mode 2: plotting mode ---
 
     # 1. Determine which Trees to plot based on selected_indices
-    x_ticks = []  # Stores x-axis labels
+    x_ticks, trees_to_plot = [], []  # Stores x-axis labels
 
     if selected_indices is None:
         # If not specified, plot everything while keeping file order
@@ -119,7 +305,7 @@ def create_performance_plot(
                 f"Warning: indices {invalid_indices} are out of range and were ignored."
             )
 
-        print(f"Info: selected {len(trees_to_plot)} Trees for plotting.")
+        print(f"Info: found {len(trees_to_plot)} Trees for plotting.")
 
     if not trees_to_plot:
         print("Error: no valid Trees available for plotting.")
@@ -287,7 +473,7 @@ def create_performance_plot(
     output_dir = "fig"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    output_filename = f"{output_dir}/eval_kernel_overall_json.pdf"
+    output_filename = f"{output_dir}/eval_kernel_overall.pdf"
 
     plt.subplots_adjust(left=0.08, right=0.99, top=0.95, bottom=0.31, hspace=0.05)
     plt.savefig(output_filename)
@@ -308,22 +494,23 @@ if __name__ == "__main__":
     args = parser.parse_args()
     json_file = args.log_file
 
-    create_performance_plot(filename=json_file, list_trees_only=True)
-    my_trees_indices = list(range(20))
-
-    my_ops = ["pat", "FastTree", "ra", "ra++", "flashinfer", "vllm-fa"]
-    my_labels = [
-        "PAT",
-        "FastTree",
-        "RelayAttn",
-        "RelayAttn++",
-        "FlashInfer",
-        "FlashAttn",
-    ]
-
+    # create_performance_plot(filename=json_file, list_trees_only=True)
     create_performance_plot(
         filename=json_file,
-        operator_order=my_ops,
-        selected_indices=my_trees_indices,  # None means all
-        labels=my_labels,
+        operator_order=["pat", "FastTree", "ra", "ra++", "flashinfer", "vllm-fa"],
+        selected_indices=list(range(20)),  # None means all
+        labels=[
+            "PAT",
+            "FastTree",
+            "RelayAttn",
+            "RelayAttn++",
+            "FlashInfer",
+            "FlashAttn",
+        ],
     )
+    
+    # Summarize kernel performance
+    baseline_keys = ["flashinfer", "vllm-fa", "ra", "ra++", "FastTree"]
+    # summarize_kernel_perf_for_tree(json_file, baseline_keys=baseline_keys, tree="256_1024", pat_key="pat")
+    # summarize_kernel_perf_for_tree(json_file, baseline_keys=baseline_keys, tree="256_4096", pat_key="pat")
+    summarize_kernel_perf(json_file, baseline_keys=baseline_keys, pat_key="pat")

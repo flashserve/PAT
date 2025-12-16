@@ -62,27 +62,16 @@ run_worker() {
 
                 local TEMP_LOG=$(mktemp)
 
-                # python run_e2e_experiments.py \
-                #     --model "$model" \
-                #     --max-model-len $MAX_MODEL_LEN \
-                #     --port $MY_PORT \
-                #     --gpu-id $MY_GPU_ID \
-                #     --backend "$backend" \
-                #     --request-rate $rate \
-                #     --trace "$trace" \
-                #     --block-size $BLOCK_SIZE \
-                #     --num-prompts $NUM_PROMPTS > "$TEMP_LOG" 2>&1
-
-                echo "python run_e2e_experiments.py \
-                    --model \"$model\" \
+                python run_e2e_experiments.py \
+                    --model "$model" \
                     --max-model-len $MAX_MODEL_LEN \
                     --port $MY_PORT \
                     --gpu-id $MY_GPU_ID \
-                    --backend \"$backend\" \
-                    --request-rate $rate \
-                    --trace \"$trace\" \
+                    --backend "$backend" \
+                    --request-rate $REQ_RATE \
+                    --trace "$trace" \
                     --block-size $BLOCK_SIZE \
-                    --num-prompts $NUM_PROMPTS" ">" "$TEMP_LOG" "2>&1"
+                    --num-prompts $NUM_PROMPTS > "$TEMP_LOG" 2>&1
 
                 local EXIT_CODE=$?
                 local SUCCESS=false

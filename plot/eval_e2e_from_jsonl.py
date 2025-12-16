@@ -10,6 +10,8 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import matplotlib
+from pprint import pprint
+from typing import Dict, Any, Tuple, List
 
 matplotlib.rcParams["pdf.fonttype"] = 42
 matplotlib.rcParams["ps.fonttype"] = 42
@@ -101,6 +103,79 @@ def extract_data(root: str):
             for fname in data[key][metric]:
                 data[key][metric][fname].sort(key=lambda x: x[0])
     return data
+
+
+def summarize_pat_reduction(data: Dict[str, Any],
+                            metrics=("TTFT", "TPOT", "P99"),
+                            pat_name="PAT",
+                            eps: float = 1e-12) -> Dict[str, Dict[str, Dict[str, Dict[str, float]]]]:
+    """Returns: out[workload][metric][baseline] = {"avg":..., "min":..., "max":..., "n":...}"""
+    out: Dict[str, Dict[str, Dict[str, Dict[str, float]]]] = {}
+
+    for workload, workload_blob in data.items():
+        # workload_blob is like: defaultdict(..., {metric: defaultdict(list, {impl: [(qps,val), ...]})})
+        out[workload] = {}
+        for metric in metrics:
+            if metric not in workload_blob:
+                continue
+
+            metric_blob = workload_blob[metric]  # {impl: [(qps,val), ...]}
+            if pat_name not in metric_blob:
+                continue
+
+            # PAT series -> dict[qps] = value
+            pat_map = {float(qps): float(val) for qps, val in metric_blob[pat_name]}
+
+            out[workload][metric] = {}
+            for impl, series in metric_blob.items():
+                if impl == pat_name:
+                    continue
+
+                base_map = {float(qps): float(val) for qps, val in series}
+
+                # intersect QPS
+                common_qps = sorted(set(pat_map.keys()) & set(base_map.keys()))
+                if not common_qps:
+                    continue
+
+                reductions: List[float] = []
+                for qps in common_qps:
+                    b = base_map[qps]
+                    p = pat_map[qps]
+                    if abs(b) <= eps:
+                        # baseline is 0 -> skip (avoid inf)
+                        continue
+                    reductions.append((b - p) / b * 100.0)
+
+                if not reductions:
+                    continue
+
+                out[workload][metric][impl] = {
+                    "avg": sum(reductions) / len(reductions),
+                    "min": min(reductions),
+                    "max": max(reductions),
+                    "n": float(len(reductions)),
+                }
+
+    return out
+
+
+def print_summary(out: Dict):
+    print("\n================ Per-workload PAT reduction vs baselines (%) ================\n")
+    for workload in sorted(out.keys()):
+        print(f"[Workload] {workload}")
+        for metric in ["TTFT", "TPOT", "P99"]:
+            if metric not in out[workload]:
+                continue
+            print(f"  - {metric}")
+            # 按 baseline 名字排序
+            for baseline in sorted(out[workload][metric].keys()):
+                s = out[workload][metric][baseline]
+                # s["avg/min/max"] 是 reduction(%)，越大表示 PAT 降低越多
+                print(f"      {baseline:18s}  "
+                      f"avg={s['avg']:7.2f}%  min={s['min']:7.2f}%  max={s['max']:7.2f}%  "
+                      f"n={int(s.get('n', 0))}")
+        print()
 
 
 def plot_grid(data, out_path="figure.pdf", log_scale=True):
@@ -239,8 +314,13 @@ def main():
     use_log_scale = not args.no_log
 
     data = extract_data(args.log_file)
+    
     plot_grid(data, args.out, log_scale=use_log_scale)
     print(f"[OK] Saved: {args.out} (Log Scale: {use_log_scale})")
+    
+    # Summarize PAT reductions
+    out = summarize_pat_reduction(data)
+    print_summary(out)
 
 
 if __name__ == "__main__":
