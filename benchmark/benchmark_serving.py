@@ -59,6 +59,8 @@ PORT_TO_BACKEND = {
     9001: "FlashAttntion",
     9002: "FlashInfer",
     9003: "RelayAttntion++",
+    16000: "PAT",
+    16001: "FlashAttntion",
 }
 
 # --- Custom Dataset and Request Definitions ---
@@ -569,9 +571,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     pprint('#'*75 + f"\nRunning benchmark with arguments: {args}\n" + '#'*75)
 
-    if args.port in PORT_TO_BACKEND.keys():
-        print(f'[INFO] benchmark serving based on {PORT_TO_BACKEND[args.port]} (port {args.port})')
-    else:
-        print(f"[ERROR] unknown port {args.port}. Use 9000-9003 for PAT, FA, FI, RA.")
+    # if args.port in PORT_TO_BACKEND.keys():
+    #     print(f'[INFO] benchmark serving based on {PORT_TO_BACKEND[args.port]} (port {args.port})')
+    # else:
+    #     print(f"[ERROR] unknown port {args.port}. Use 9000-9003 for PAT, FA, FI, RA.")
 
     main(args)
