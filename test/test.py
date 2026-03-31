@@ -32,7 +32,6 @@ from prefix_attn import (
     generate_random_kv_cache,
     generate_tree_seqs,
 )
-from prefix_attn.calc_theoretical import calc_theoretical
 from prefix_attn.data_class import create_seq_group
 from prefix_attn.block_scheduler import schedule, schedule_naive
 from prefix_attn.utils import make_tensor_with_pad
@@ -94,9 +93,6 @@ def tree_benchmark(
             )
 
     # ----- step-2: schedule and transfer results to GPU (count to overhead) ----------------------------------
-    theoretical_time = calc_theoretical(block_table, nheads_q, nheads_kv, head_dim)
-    # print(f"[INFO] (pytest) (attn) approximate theoretical time: {theoretical_time:.4f}ms")
-
     _start = time.perf_counter()
     MNWs = None
     table = block_table.cpu()

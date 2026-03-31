@@ -126,7 +126,7 @@ def run_experiment(config, OUTPUT_LOG_FILE):
         preexec_fn=os.setsid,
     )
 
-    base_url = f"http://0.0.0.0:{config['port']}"
+    base_url = f"http://{config['host']}:{config['port']}"
 
     try:
         # 2. Wait for the server to become ready
@@ -138,6 +138,8 @@ def run_experiment(config, OUTPUT_LOG_FILE):
         bench_cmd = [
             "python",
             str(BENCHMARK_SCRIPT),
+            "--host",
+            config["host"],
             "--port",
             config["port"],
             "--block-size",
@@ -212,6 +214,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max-model-len", type=int, default=32768, help="Context length"
     )
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Service host")
     parser.add_argument("--port", type=int, default=9000, help="Service port")
     parser.add_argument(
         "--gpu-id", type=str, default="0", help="GPU ID (e.g., 0 or 0,1)"

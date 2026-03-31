@@ -56,11 +56,11 @@ except ImportError:
 
 PORT_TO_BACKEND = {
     9000: "PAT",
-    9001: "FlashAttntion",
+    9001: "FlashAttention",
     9002: "FlashInfer",
-    9003: "RelayAttntion++",
+    9003: "RelayAttention++",
     16000: "PAT",
-    16001: "FlashAttntion",
+    16001: "FlashAttention",
 }
 
 # --- Custom Dataset and Request Definitions ---
@@ -328,7 +328,7 @@ async def benchmark(
     )
 
     print("{s:{c}^{n}}".format(s=' Serving Benchmark Result ', n=50, c='='))
-    print(f"{'Backend:':<35} {PORT_TO_BACKEND[port]:<10}")
+    print(f"{'Backend:':<35} {PORT_TO_BACKEND.get(port, -1):<10}")
     print(f"{'Dataset type:':<35} {dataset_type:<10}")
     print(f"{'Request rate (req/s):':<35} {request_rate:<10.2f}")
     print(f"{'Successful requests:':<35} {metrics.completed:<10}")
